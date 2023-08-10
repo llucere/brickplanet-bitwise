@@ -133,7 +133,7 @@ function bit64.bnot(bitstream1)
 	local n = 1
 	
 	while (n <= highPow2) do
-		if (not getBit(bitstream1, 1)) then
+		if (getBit(bitstream1, 1) ~= 1) then
 			sum = sum + n
 		end
 
