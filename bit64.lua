@@ -21,6 +21,12 @@
 --# bit64.bnot(bitstream1)
 ---- inverses all the 1s and 0s, up to the last 1 or 0
 
+--# bit64.bnotDEF(bitstream1)
+---- the definition of binary NOT
+
+--# bit64.bxor2(bitstream1, bitstream2)
+---- detects change of 1s and 0s
+
 --# bit64.stringToBinary(unconverted) @ bit64.stringToDecimal(unconverted)
 ---- turns string into binary
 
@@ -127,8 +133,25 @@ function bit64.bnor2(bitstream1, bitstream2)
 	return sum
 end
 
-function bit64.bnot(bitstream1)
-	local highPow2 = 2^bit64.highestPow2(bitstream1)
+function bit64.bxor2(bitstream1, bitstream2)
+	local highPow2 = 2^math.max(bit64.highestPow2(bitstream1), bit64.highestPow2(bitstream2))
+	local sum = 0
+	local n = 1
+	
+	while (n <= highPow2) do
+		if (getBit(bitstream1, 1 ) ~= getBit(bitstream2, 1)) then
+			sum = sum + n
+		end
+
+		bitstream1 = math.modf(bitstream1 / 2)
+		bitstream2 = math.modf(bitstream2 / 2)
+		n = n * 2
+	end
+	return sum
+end
+
+function bit64.bnot(bitstream1, numBits)
+	local highPow2 = 2^(numBits or bit64.highestPow2(bitstream1))
 	local sum = 0
 	local n = 1
 	
@@ -138,10 +161,13 @@ function bit64.bnot(bitstream1)
 		end
 
 		bitstream1 = math.modf(bitstream1 / 2)
-		bitstream2 = math.modf(bitstream2 / 2)
 		n = n * 2
 	end
 	return sum
+end
+
+function bit64.bnotDEF(bitstream1)
+	return (-1 - bitstream1) % 2^32
 end
 
 function bit64.stringToBinary(unconverted)
@@ -173,6 +199,10 @@ function bit64.binaryToString(decimal, addNotation)
 		n = n * 2
 	end
 
+	if (bitstream == "") then
+		bitstream = "0"..bitstream
+	end
+
 	return (addNotation and ("0b") or (""))..bitstream
 end
 bit64.decimalToString = bit64.binaryToString
@@ -201,8 +231,9 @@ end
 
 function bit64.replace(target, datum, numBits, shift)
 	local newDatum = bit64.lshift(bit64.band2(datum, bit64.maskNoShift(numBits)), shift)
-	local clrMask = bit64.bnot(bit64.maskNoShift(numBits))
-	return bit64.bor2(bit64.band2(target, clrMask), newDatum)
+	local clrMask = bit64.bnot(bit64.maskNoShift(numBits), bit64.highestPow2(target))
+	local result = bit64.bor2(bit64.band2(target, clrMask), newDatum)
+	return result
 end
 
 return bit64
